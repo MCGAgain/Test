@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gamma-spectrum-analyzer"
+version = "0.1.0"
+description = "Gamma spectrum peak search, calibration, nuclide identification and activity analysis CLI/GUI."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.26",
+  "scipy>=1.11",
+  "matplotlib>=3.8",
+  "typer>=0.12",
+  "rich>=13.7",
+  "xlrd>=2.0",
+]
+
+[project.optional-dependencies]
+build = ["pyinstaller>=6.8", "dmgbuild>=1.6; platform_system == 'Darwin'"]
+
+[project.scripts]
+gamma-spectra = "gamma_spectrum_analyzer.cli:app"
+gamma-spectra-gui = "gamma_spectrum_analyzer.gui:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pyinstaller]
+name = "gamma-spectra"

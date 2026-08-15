@@ -1,0 +1,69 @@
+name: Build executables
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: gamma-spectra-windows
+            exe_path: dist/gamma-spectra.exe
+          - os: macos-latest
+            artifact_name: gamma-spectra-macos
+            exe_path: dist/gamma-spectra
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package and build tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ".[build]"
+
+      - name: Build CLI executable
+        run: |
+          pyinstaller --clean --onefile --name gamma-spectra src/gamma_spectrum_analyzer/cli.py
+
+      - name: Build GUI executable
+        run: |
+          pyinstaller --clean --windowed --name gamma-spectra-gui src/gamma_spectrum_analyzer/gui.py
+
+      - name: Create Windows zip
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path dist/gamma-spectra.exe,dist/gamma-spectra-gui.exe -DestinationPath gamma-spectra-windows.zip
+
+      - name: Create macOS dmg
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p dmgroot
+          cp dist/gamma-spectra dmgroot/
+          cp -R dist/gamma-spectra-gui.app dmgroot/
+          hdiutil create -volname gamma-spectra -srcfolder dmgroot -ov -format UDZO gamma-spectra-macos.dmg
+
+      - name: Upload Windows artifact
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: gamma-spectra-windows.zip
+
+      - name: Upload macOS artifact
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: gamma-spectra-macos.dmg
