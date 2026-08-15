@@ -88,24 +88,3 @@ Activity = NetArea / (t_live * efficiency(E) * Yield)
 ```
 
 `examples/standard_activities.example.json` 是活度配置模板。后续填入每个标准源在测量时刻的 Bq 后，可以扩展 `calibration.json` 的 `efficiency_coefficients`，活度列就会自动计算。
-
-## GitHub 构建
-
-初始化并上传：
-
-```bash
-cd /Users/Zhuanz/gamma-spectrum-analyzer
-git init
-git add .
-git commit -m "Initial gamma spectrum analyzer"
-git branch -M main
-git remote add origin https://github.com/<你的用户名>/<仓库名>.git
-git push -u origin main
-```
-
-推送后，GitHub Actions 会运行 `.github/workflows/build.yml`：
-
-- Windows: 上传 `gamma-spectra-windows.zip`，里面包含 `gamma-spectra.exe` 和 `gamma-spectra-gui.exe`
-- macOS: 上传 `gamma-spectra-macos.dmg`
-
-如果要让我直接推到 GitHub，需要先在 Codex 里连接 GitHub 插件或提供已配置好的本地 git remote/token。
