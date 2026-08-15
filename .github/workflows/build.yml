@@ -6,6 +6,9 @@ on:
     tags: ["v*"]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
@@ -14,10 +17,8 @@ jobs:
         include:
           - os: windows-latest
             artifact_name: gamma-spectra-windows
-            exe_path: dist/gamma-spectra.exe
           - os: macos-latest
             artifact_name: gamma-spectra-macos
-            exe_path: dist/gamma-spectra
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -36,7 +37,13 @@ jobs:
         run: |
           pyinstaller --clean --onefile --name gamma-spectra src/gamma_spectrum_analyzer/cli.py
 
-      - name: Build GUI executable
+      - name: Build GUI executable (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          pyinstaller --clean --onefile --windowed --name gamma-spectra-gui src/gamma_spectrum_analyzer/gui.py
+
+      - name: Build GUI executable (macOS)
+        if: runner.os == 'macOS'
         run: |
           pyinstaller --clean --windowed --name gamma-spectra-gui src/gamma_spectrum_analyzer/gui.py
 
@@ -67,3 +74,33 @@ jobs:
         with:
           name: ${{ matrix.artifact_name }}
           path: gamma-spectra-macos.dmg
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+            FLAGS=""
+          else
+            TAG="latest"
+            FLAGS="--prerelease"
+          fi
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" release-assets/* \
+            --title "$TAG" \
+            --generate-notes \
+            $FLAGS
