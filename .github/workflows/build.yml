@@ -35,17 +35,17 @@ jobs:
 
       - name: Build CLI executable
         run: |
-          pyinstaller --clean --onefile --name gamma-spectra src/gamma_spectrum_analyzer/cli.py
+          pyinstaller --clean --onefile --name gamma-spectra packaging/entry_cli.py
 
       - name: Build GUI executable (Windows)
         if: runner.os == 'Windows'
         run: |
-          pyinstaller --clean --onefile --windowed --name gamma-spectra-gui src/gamma_spectrum_analyzer/gui.py
+          pyinstaller --clean --onefile --windowed --name gamma-spectra-gui packaging/entry_gui.py
 
       - name: Build GUI executable (macOS)
         if: runner.os == 'macOS'
         run: |
-          pyinstaller --clean --windowed --name gamma-spectra-gui src/gamma_spectrum_analyzer/gui.py
+          pyinstaller --clean --windowed --name gamma-spectra-gui packaging/entry_gui.py
 
       - name: Create Windows zip
         if: runner.os == 'Windows'
