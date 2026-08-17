@@ -7,6 +7,6 @@ build/
 dist/
 *.spec
 output/
-calibration.json
+/calibration.json
 *.dmg
 *.zip

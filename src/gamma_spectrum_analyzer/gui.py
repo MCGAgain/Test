@@ -15,6 +15,7 @@ from .models import Calibration, Peak, Spectrum
 from .peaks import find_and_fit_peaks
 from .quantify import fill_quantification
 from .report import HEADERS, peak_rows, write_peak_csv
+from .resources import builtin_calibration_path
 
 
 class GammaGui(tk.Tk):
@@ -23,7 +24,9 @@ class GammaGui(tk.Tk):
         self.title("γ能谱识别分析软件")
         self.geometry("1280x780")
         self.spectrum: Spectrum | None = None
-        self.calibration: Calibration | None = None
+        self.calibration: Calibration | None = self._load_builtin_calibration()
+        if self.calibration is not None:
+            self.title("γ能谱识别分析软件（内置刻度已加载）")
         self.peaks: list[Peak] = []
         self.x_mode = tk.StringVar(value="energy")
         self.log_y = tk.BooleanVar(value=False)
@@ -50,11 +53,20 @@ class GammaGui(tk.Tk):
 
         ttk.Label(self, textvariable=self.status, anchor=tk.W).pack(fill=tk.X, padx=6, pady=3)
 
+    def _load_builtin_calibration(self) -> Calibration | None:
+        """Try to load the calibration JSON bundled with the executable."""
+        path = builtin_calibration_path()
+        try:
+            return load_calibration(path)
+        except Exception:
+            return None
+
     def load_calibration(self) -> None:
         path = filedialog.askopenfilename(filetypes=[("Calibration", "*.json"), ("All files", "*.*")])
         if not path:
             return
         self.calibration = load_calibration(path)
+        self.title("γ能谱识别分析软件（自定义刻度）")
         messagebox.showinfo("刻度", "刻度加载完成")
 
     def load_spectrum(self) -> None:

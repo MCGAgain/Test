@@ -1,0 +1,130 @@
+{
+  "energy_coefficients": [
+    -3.456560024309457,
+    0.30188354405258383,
+    -7.264852388072543e-07
+  ],
+  "efficiency_coefficients": null,
+  "used_peaks": [
+    {
+      "channel": 3948.9811268273393,
+      "energy_kev": 1173.23,
+      "standard": "Co-60"
+    },
+    {
+      "channel": 4485.057550550146,
+      "energy_kev": 1332.49,
+      "standard": "Co-60"
+    },
+    {
+      "channel": 409.7156521668666,
+      "energy_kev": 121.78,
+      "standard": "Eu-152"
+    },
+    {
+      "channel": 823.5138827940636,
+      "energy_kev": 244.7,
+      "standard": "Eu-152"
+    },
+    {
+      "channel": 1158.1167607375746,
+      "energy_kev": 344.28,
+      "standard": "Eu-152"
+    },
+    {
+      "channel": 2621.4644967375552,
+      "energy_kev": 778.9,
+      "standard": "Eu-152"
+    },
+    {
+      "channel": 3245.2390821262597,
+      "energy_kev": 964.08,
+      "standard": "Eu-152"
+    },
+    {
+      "channel": 3655.3522697913613,
+      "energy_kev": 1112.08,
+      "standard": "Eu-152"
+    },
+    {
+      "channel": 4739.235646436437,
+      "energy_kev": 1408.01,
+      "standard": "Eu-152"
+    },
+    {
+      "channel": 956.7118550558326,
+      "energy_kev": 284.31,
+      "standard": "Cs-137+I-131"
+    },
+    {
+      "channel": 1226.9455703473784,
+      "energy_kev": 364.49,
+      "standard": "Cs-137+I-131"
+    },
+    {
+      "channel": 2228.162927621561,
+      "energy_kev": 661.66,
+      "standard": "Cs-137+I-131"
+    },
+    {
+      "channel": 271.3310589410568,
+      "energy_kev": 81.0,
+      "standard": "Cs-137+Ba-133"
+    },
+    {
+      "channel": 1197.815038194766,
+      "energy_kev": 356.01,
+      "standard": "Cs-137+Ba-133"
+    },
+    {
+      "channel": 2226.921224620085,
+      "energy_kev": 661.66,
+      "standard": "Cs-137+Ba-133"
+    },
+    {
+      "channel": 409.66171944781917,
+      "energy_kev": 121.78,
+      "standard": "Co-60+Eu-152"
+    },
+    {
+      "channel": 823.4627531098014,
+      "energy_kev": 244.7,
+      "standard": "Co-60+Eu-152"
+    },
+    {
+      "channel": 1158.0728326937751,
+      "energy_kev": 344.28,
+      "standard": "Co-60+Eu-152"
+    },
+    {
+      "channel": 2621.405118004966,
+      "energy_kev": 778.9,
+      "standard": "Co-60+Eu-152"
+    },
+    {
+      "channel": 3245.1182934314347,
+      "energy_kev": 964.08,
+      "standard": "Co-60+Eu-152"
+    },
+    {
+      "channel": 3655.2758007242023,
+      "energy_kev": 1112.08,
+      "standard": "Co-60+Eu-152"
+    },
+    {
+      "channel": 3948.379281207854,
+      "energy_kev": 1173.23,
+      "standard": "Co-60+Eu-152"
+    },
+    {
+      "channel": 4484.479701947346,
+      "energy_kev": 1332.49,
+      "standard": "Co-60+Eu-152"
+    },
+    {
+      "channel": 4739.144397819702,
+      "energy_kev": 1408.01,
+      "standard": "Co-60+Eu-152"
+    }
+  ]
+}

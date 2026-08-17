@@ -12,6 +12,7 @@ from .peaks import find_and_fit_peaks
 from .plotting import save_plot
 from .quantify import fill_quantification
 from .report import rich_peak_table, write_peak_csv
+from .resources import builtin_calibration_path
 
 app = typer.Typer(help="Gamma spectrum recognition and analysis.")
 console = Console()
@@ -43,7 +44,12 @@ def analyze(
     log_y: bool = typer.Option(False, "--log-y", help="Use logarithmic Y axis in plot."),
 ) -> None:
     """Analyze an unknown spectrum and output a screenshot-style peak table."""
-    calibration = load_calibration(calibration_file)
+    cal_path = calibration_file
+    if not Path(cal_path).exists():
+        cal_path = builtin_calibration_path()
+        console.print(f"[yellow]calibration file '{calibration_file}' not found; "
+                      f"using bundled default calibration instead.[/]")
+    calibration = load_calibration(cal_path)
     spectrum = read_spectrum(spectrum_file)
     peaks = find_and_fit_peaks(spectrum, calibration, prominence_sigma=prominence_sigma)
     confirmed = identify_peaks(peaks, tolerance_kev)
