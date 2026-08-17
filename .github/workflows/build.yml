@@ -36,21 +36,15 @@ jobs:
           python -m pip install ".[build]"
 
       - name: Build CLI executable
-        run: |
-          pyinstaller --clean --onefile --name gamma-spectra packaging/entry_cli.py \
-            --add-data "src/gamma_spectrum_analyzer/data${{ matrix.data_sep }}gamma_spectrum_analyzer/data"
+        run: pyinstaller --clean --onefile --name gamma-spectra packaging/entry_cli.py --add-data "src/gamma_spectrum_analyzer/data${{ matrix.data_sep }}gamma_spectrum_analyzer/data"
 
       - name: Build GUI executable (Windows)
         if: runner.os == 'Windows'
-        run: |
-          pyinstaller --clean --onefile --windowed --name gamma-spectra-gui packaging/entry_gui.py \
-            --add-data "src/gamma_spectrum_analyzer/data;gamma_spectrum_analyzer/data"
+        run: pyinstaller --clean --onefile --windowed --name gamma-spectra-gui packaging/entry_gui.py --add-data "src/gamma_spectrum_analyzer/data;gamma_spectrum_analyzer/data"
 
       - name: Build GUI executable (macOS)
         if: runner.os == 'macOS'
-        run: |
-          pyinstaller --clean --windowed --name gamma-spectra-gui packaging/entry_gui.py \
-            --add-data "src/gamma_spectrum_analyzer/data:gamma_spectrum_analyzer/data"
+        run: pyinstaller --clean --windowed --name gamma-spectra-gui packaging/entry_gui.py --add-data "src/gamma_spectrum_analyzer/data:gamma_spectrum_analyzer/data"
 
       - name: Create Windows zip
         if: runner.os == 'Windows'
