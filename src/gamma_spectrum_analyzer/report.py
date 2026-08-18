@@ -51,6 +51,38 @@ def rich_peak_table(peaks: list[Peak]) -> Table:
     return table
 
 
+RTK_HEADERS = [
+    "样品", "核素", "样品量(kg)", "活度(Bq)", "比活度(Bq/kg)", "不确定度(%)",
+]
+
+
+def rtk_rows(rows: list[dict]) -> list[list[str]]:
+    return [[
+        row.get("sample", ""),
+        row.get("nuclide", ""),
+        _fmt(row.get("mass_kg"), 4),
+        _fmt(row.get("activity_bq"), 4),
+        _fmt(row.get("specific_activity_bq_per_kg"), 4),
+        _fmt(row.get("uncert_percent"), 3),
+    ] for row in rows]
+
+
+def write_rtk_csv(rows: list[dict], path: str | Path) -> None:
+    with Path(path).open("w", encoding="utf-8-sig", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(RTK_HEADERS)
+        writer.writerows(rtk_rows(rows))
+
+
+def rich_rtk_table(rows: list[dict]) -> Table:
+    table = Table(title="镭钍钾比活度分析结果（GB/T 11743-2013）")
+    for header in RTK_HEADERS:
+        table.add_column(header, overflow="fold")
+    for row in rtk_rows(rows):
+        table.add_row(*row)
+    return table
+
+
 def _fmt(value, digits: int) -> str:
     if value is None:
         return ""

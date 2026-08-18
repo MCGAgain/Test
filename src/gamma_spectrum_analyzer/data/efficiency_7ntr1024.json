@@ -1,0 +1,53 @@
+{
+  "name": "7NTR-1024 土壤监测效率校准源",
+  "reference_date": "2015-01-25",
+  "mass_kg": 0.33776,
+  "activities_bq": {
+    "U-238": 1011.0,
+    "U-235": 42.4,
+    "Ra-226": 903.0,
+    "Th-232": 483.0,
+    "K-40": 668.0,
+    "Am-241": 1700.0,
+    "Co-60": 1406.0,
+    "Cs-137": 1571.0
+  },
+  "half_lives_years": {
+    "U-238": 4468000000.0,
+    "U-235": 703800000.0,
+    "Ra-226": 1600.0,
+    "Th-232": 14050000000.0,
+    "K-40": 1248000000.0,
+    "Am-241": 432.2,
+    "Co-60": 5.271,
+    "Cs-137": 30.08
+  },
+  "lines": [
+    {"parent": "Am-241", "energy_kev": 59.54,  "yield": 0.3578},
+    {"parent": "U-238",  "energy_kev": 63.29,  "yield": 0.048},
+    {"parent": "U-238",  "energy_kev": 92.38,  "yield": 0.0213},
+    {"parent": "U-235",  "energy_kev": 143.76, "yield": 0.1096},
+    {"parent": "U-235",  "energy_kev": 163.36, "yield": 0.0508},
+    {"parent": "Th-232", "energy_kev": 238.63, "yield": 0.436},
+    {"parent": "Ra-226", "energy_kev": 295.21, "yield": 0.184},
+    {"parent": "Th-232", "energy_kev": 338.32, "yield": 0.113},
+    {"parent": "Ra-226", "energy_kev": 351.92, "yield": 0.356},
+    {"parent": "Th-232", "energy_kev": 583.19, "yield": 0.855},
+    {"parent": "Ra-226", "energy_kev": 609.31, "yield": 0.448},
+    {"parent": "Cs-137", "energy_kev": 661.66, "yield": 0.8513},
+    {"parent": "Ra-226", "energy_kev": 768.36, "yield": 0.049},
+    {"parent": "Th-232", "energy_kev": 911.20, "yield": 0.258},
+    {"parent": "Th-232", "energy_kev": 969.11, "yield": 0.158},
+    {"parent": "Ra-226", "energy_kev": 1120.29, "yield": 0.149},
+    {"parent": "Co-60",  "energy_kev": 1173.23, "yield": 0.9985},
+    {"parent": "Ra-226", "energy_kev": 1238.11, "yield": 0.0585},
+    {"parent": "Co-60",  "energy_kev": 1332.49, "yield": 0.999826},
+    {"parent": "K-40",   "energy_kev": 1460.83, "yield": 0.1066},
+    {"parent": "Ra-226", "energy_kev": 1764.49, "yield": 0.153}
+  ],
+  "excluded_energies": [
+    63.29, 92.38, 143.76, 163.36,
+    768.36, 1238.11,
+    1460.83
+  ]
+}

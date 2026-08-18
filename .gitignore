@@ -1,12 +1,14 @@
-.venv/
 __pycache__/
 *.pyc
+.venv/
 *.egg-info/
-.pytest_cache/
-build/
 dist/
-*.spec
+build/
+
+# runtime output artifacts
+*.png
+calibration.json
+rtk_report.csv
+peak_table.csv
+efficiency_curve.json
 output/
-/calibration.json
-*.dmg
-*.zip

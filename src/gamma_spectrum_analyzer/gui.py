@@ -3,19 +3,21 @@ from __future__ import annotations
 import tempfile
 import tkinter as tk
 from pathlib import Path
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox, simpledialog, ttk
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
-from .calibration import load_calibration
+from .calibration import auto_energy_calibration, load_calibration
+from .efficiency import CalibrationSource, EfficiencyCurve, fit_efficiency_points
 from .identify import identify_peaks
 from .io import read_spectrum
+from .library import RTK_QUANTIFICATION_LINES
 from .models import Calibration, Peak, Spectrum
 from .peaks import find_and_fit_peaks
-from .quantify import fill_quantification
+from .quantify import fill_quantification, quantify_specific_activity
 from .report import HEADERS, peak_rows, write_peak_csv
-from .resources import builtin_calibration_path
+from .resources import builtin_calibration_path, builtin_efficiency_path
 
 
 class GammaGui(tk.Tk):
@@ -30,6 +32,7 @@ class GammaGui(tk.Tk):
         self.peaks: list[Peak] = []
         self.x_mode = tk.StringVar(value="energy")
         self.log_y = tk.BooleanVar(value=False)
+        self.auto_calibrate = tk.BooleanVar(value=False)
         self.status = tk.StringVar(value="Time: 0 | Cps: 0 | Channel: 0 | Counts: 0 | Energy: 0.00 | FWHM: 0 Ch | ROI Area: 0 | ROI LR: 0|0")
         self._build()
 
@@ -41,9 +44,11 @@ class GammaGui(tk.Tk):
         ttk.Button(toolbar, text="分析", command=self.analyze).pack(side=tk.LEFT, padx=3)
         ttk.Button(toolbar, text="峰信息", command=self.show_peak_window).pack(side=tk.LEFT, padx=3)
         ttk.Button(toolbar, text="保存CSV", command=self.save_csv).pack(side=tk.LEFT, padx=3)
+        ttk.Button(toolbar, text="镭钍钾分析", command=self.analyze_rtk).pack(side=tk.LEFT, padx=3)
         ttk.Radiobutton(toolbar, text="能量", variable=self.x_mode, value="energy", command=self.redraw).pack(side=tk.LEFT, padx=8)
         ttk.Radiobutton(toolbar, text="道号", variable=self.x_mode, value="channel", command=self.redraw).pack(side=tk.LEFT)
         ttk.Checkbutton(toolbar, text="log Y", variable=self.log_y, command=self.redraw).pack(side=tk.LEFT, padx=8)
+        ttk.Checkbutton(toolbar, text="自动刻度", variable=self.auto_calibrate).pack(side=tk.LEFT, padx=8)
 
         self.fig = Figure(figsize=(12, 6), dpi=100)
         self.ax = self.fig.add_subplot(111)
@@ -81,14 +86,54 @@ class GammaGui(tk.Tk):
         if self.spectrum is None:
             messagebox.showwarning("提示", "请先导入谱文件")
             return
-        if self.calibration is None:
-            messagebox.showwarning("提示", "请先加载 calibration.json")
+        calibration = self.calibration
+        if self.auto_calibrate.get():
+            try:
+                calibration = auto_energy_calibration(self.spectrum)
+            except Exception as exc:
+                messagebox.showerror("自动刻度", f"自动能量刻度失败：{exc}")
+                return
+        elif calibration is None:
+            messagebox.showwarning("提示", "请先加载 calibration.json，或勾选“自动刻度”")
             return
-        self.peaks = find_and_fit_peaks(self.spectrum, self.calibration, prominence_sigma=4.0)
+        self.peaks = find_and_fit_peaks(self.spectrum, calibration, prominence_sigma=4.0)
         identify_peaks(self.peaks)
-        fill_quantification(self.peaks, self.spectrum, self.calibration)
+        fill_quantification(self.peaks, self.spectrum, calibration)
         self.redraw()
         self.show_peak_window()
+
+    def analyze_rtk(self) -> None:
+        """镭钍钾比活度分析：用 7NTR-1024 校准源刻度效率曲线，对当前谱算 Ra/Th/K。"""
+        if self.spectrum is None:
+            messagebox.showwarning("提示", "请先导入待测样品谱")
+            return
+        cal_path = filedialog.askopenfilename(
+            title="选择校准源谱文件（如 土壤监测效率校准源.xls）",
+            filetypes=[("Spectrum", "*.xls *.csv *.txt *.spe"), ("All files", "*.*")],
+        )
+        if not cal_path:
+            return
+        try:
+            cal_spec = read_spectrum(cal_path)
+            source = CalibrationSource.from_json(builtin_efficiency_path())
+            cal = auto_energy_calibration(cal_spec)
+            points = fit_efficiency_points(cal_spec, source, cal)
+            curve = EfficiencyCurve(points)
+            mass = float(simpledialog.askstring("样品量", "请输入待测样品质量 m (kg)：", initialvalue="0.300"))
+            if mass <= 0:
+                raise ValueError("样品质量必须为正")
+            peaks = find_and_fit_peaks(self.spectrum, auto_energy_calibration(self.spectrum), prominence_sigma=3.0)
+            quantities = quantify_specific_activity(
+                peaks, self.spectrum.live_time, curve, mass, RTK_QUANTIFICATION_LINES
+            )
+        except Exception as exc:
+            messagebox.showerror("镭钍钾分析", f"分析失败：{exc}")
+            return
+        if not quantities:
+            messagebox.showwarning("镭钍钾分析", "未在谱中找到 Ra-226/Th-232/K-40 特征峰")
+            return
+        lines = [f"{n}: {q['specific_activity_bq_per_kg']:.2f} Bq/kg" for n, q in quantities.items()]
+        messagebox.showinfo("镭钍钾比活度", "样品量 m = {:.4f} kg\n\n".format(mass) + "\n".join(lines))
 
     def redraw(self) -> None:
         self.ax.clear()
