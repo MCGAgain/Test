@@ -34,11 +34,11 @@ def find_and_fit_peaks(
     widths = peak_widths(corrected, peak_idx, rel_height=0.5)
     result: list[Peak] = []
     for j, idx in enumerate(peak_idx):
-        approx_fwhm = max(float(widths[0][j]), 3.0)
-        half_window = int(max(8, min(60, approx_fwhm * 3)))
+        approx_fwhm = max(float(widths[0][j]), 2.5)
+        half_window = int(max(6, min(25, approx_fwhm * 2.5)))
         left = max(0, int(idx) - half_window)
         right = min(len(spectrum.counts) - 1, int(idx) + half_window)
-        peak = _fit_one_peak(spectrum, corrected, background, idx, left, right, calibration)
+        peak = _fit_one_peak(spectrum, idx, approx_fwhm, left, right, calibration)
         if peak.net_area > 0:
             result.append(peak)
     return sorted(result, key=lambda p: p.channel)
@@ -46,9 +46,8 @@ def find_and_fit_peaks(
 
 def _fit_one_peak(
     spectrum: Spectrum,
-    corrected: np.ndarray,
-    background: np.ndarray,
     idx: int,
+    approx_fwhm: float,
     left: int,
     right: int,
     calibration: Calibration | None,
@@ -57,7 +56,7 @@ def _fit_one_peak(
     y = spectrum.counts[left:right + 1]
     b0 = float(np.median(np.r_[y[: max(2, len(y) // 6)], y[-max(2, len(y) // 6):]]))
     amp0 = max(float(spectrum.counts[idx] - b0), 1.0)
-    sigma0 = 3.0
+    sigma0 = max(approx_fwhm / 2.355, 1.0)
 
     try:
         popt, pcov = curve_fit(
@@ -65,16 +64,15 @@ def _fit_one_peak(
             x,
             y,
             p0=[amp0, float(spectrum.channels[idx]), sigma0, b0, 0.0],
-            bounds=([0, x[0], 0.4, 0, -np.inf], [np.inf, x[-1], 80.0, np.inf, np.inf]),
-            maxfev=10000,
+            bounds=([0, x[0], 0.3, 0, -np.inf], [np.inf, x[-1], 30.0, np.inf, np.inf]),
+            maxfev=400,
         )
         amp, center, sigma, base, slope = map(float, popt)
-        center_unc = math.sqrt(abs(float(pcov[1, 1]))) if pcov.size else 0.0
     except Exception:
         amp, center, sigma, base, slope = amp0, float(spectrum.channels[idx]), sigma0, b0, 0.0
-        center_unc = 0.0
 
     fwhm_ch = 2.354820045 * abs(sigma)
+    fwtm_ch = 4.29193426 * abs(sigma)
     roi_l = max(0, int(round(center - 2.5 * fwhm_ch)))
     roi_r = min(len(spectrum.counts) - 1, int(round(center + 2.5 * fwhm_ch)))
     roi_y = spectrum.counts[roi_l:roi_r + 1]
@@ -88,10 +86,14 @@ def _fit_one_peak(
 
     energy = float(calibration.energy(center)) if calibration else None
     fwhm_kev = None
+    fwtm_kev = None
     if calibration and energy is not None:
         e_l = float(calibration.energy(center - fwhm_ch / 2))
         e_r = float(calibration.energy(center + fwhm_ch / 2))
         fwhm_kev = abs(e_r - e_l)
+        wt_l = float(calibration.energy(center - fwtm_ch / 2))
+        wt_r = float(calibration.energy(center + fwtm_ch / 2))
+        fwtm_kev = abs(wt_r - wt_l)
 
     count_rate = None
     if spectrum.live_time and spectrum.live_time > 0:
@@ -104,6 +106,8 @@ def _fit_one_peak(
         energy_kev=energy,
         fwhm_channel=fwhm_ch,
         fwhm_kev=fwhm_kev,
+        fwtm_channel=fwtm_ch,
+        fwtm_kev=fwtm_kev,
         roi_area=roi_area,
         net_area=net_area,
         area_uncert_percent=area_uncert,

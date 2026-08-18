@@ -32,7 +32,7 @@ class GammaGui(tk.Tk):
         self.peaks: list[Peak] = []
         self.x_mode = tk.StringVar(value="energy")
         self.log_y = tk.BooleanVar(value=False)
-        self.auto_calibrate = tk.BooleanVar(value=False)
+        self.auto_calibrate = tk.BooleanVar(value=True)
         self.status = tk.StringVar(value="Time: 0 | Cps: 0 | Channel: 0 | Counts: 0 | Energy: 0.00 | FWHM: 0 Ch | ROI Area: 0 | ROI LR: 0|0")
         self._build()
 
@@ -71,6 +71,7 @@ class GammaGui(tk.Tk):
         if not path:
             return
         self.calibration = load_calibration(path)
+        self.auto_calibrate.set(False)
         self.title("γ能谱识别分析软件（自定义刻度）")
         messagebox.showinfo("刻度", "刻度加载完成")
 
@@ -79,6 +80,13 @@ class GammaGui(tk.Tk):
         if not path:
             return
         self.spectrum = read_spectrum(path)
+        if self.auto_calibrate.get():
+            try:
+                self.calibration = auto_energy_calibration(self.spectrum)
+                a0, a1, a2 = self.calibration.energy_coefficients
+                self.title(f"γ能谱识别分析软件（自动刻度：E = {a0:.3f} + {a1:.5f}*CH）")
+            except Exception:
+                pass
         self.peaks = []
         self.redraw()
 
@@ -86,17 +94,16 @@ class GammaGui(tk.Tk):
         if self.spectrum is None:
             messagebox.showwarning("提示", "请先导入谱文件")
             return
-        calibration = self.calibration
-        if self.auto_calibrate.get():
+        if self.auto_calibrate.get() or self.calibration is None:
             try:
-                calibration = auto_energy_calibration(self.spectrum)
+                self.calibration = auto_energy_calibration(self.spectrum)
+                a0, a1, a2 = self.calibration.energy_coefficients
+                self.title(f"γ能谱识别分析软件（自适应刻度：E = {a0:.3f} + {a1:.5f}*CH）")
             except Exception as exc:
                 messagebox.showerror("自动刻度", f"自动能量刻度失败：{exc}")
                 return
-        elif calibration is None:
-            messagebox.showwarning("提示", "请先加载 calibration.json，或勾选“自动刻度”")
-            return
-        self.peaks = find_and_fit_peaks(self.spectrum, calibration, prominence_sigma=4.0)
+        calibration = self.calibration
+        self.peaks = find_and_fit_peaks(self.spectrum, calibration, prominence_sigma=3.0)
         identify_peaks(self.peaks)
         fill_quantification(self.peaks, self.spectrum, calibration)
         self.redraw()

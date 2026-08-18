@@ -11,4 +11,6 @@ calibration.json
 rtk_report.csv
 peak_table.csv
 efficiency_curve.json
+*.spec
+.DS_Store
 output/

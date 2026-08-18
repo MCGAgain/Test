@@ -27,6 +27,8 @@ class Peak:
     roi_area: float
     net_area: float
     area_uncert_percent: float
+    fwtm_channel: float | None = None
+    fwtm_kev: float | None = None
     count_rate: float | None = None
     nuclide: str = ""
     yield_percent: float | None = None

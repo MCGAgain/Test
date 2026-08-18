@@ -9,7 +9,7 @@ from .models import Peak
 
 
 HEADERS = [
-    "Channel", "ROI L", "ROI R", "Energy(keV)", "FWHM(Ch)", "FWHM(E)",
+    "Channel", "ROI L", "ROI R", "Energy(KeV)", "FWTM(E)", "FWHM(E)",
     "ROI Area", "Net Area", "Area Uncert(%)", "Nuclide", "Yield(%)",
     "Efficiency", "Activity(Bq)", "Activity Uncert(%)", "Count rate",
 ]
@@ -21,7 +21,7 @@ def peak_rows(peaks: list[Peak]) -> list[list[str]]:
         str(p.roi_l),
         str(p.roi_r),
         _fmt(p.energy_kev, 3),
-        _fmt(p.fwhm_channel, 2),
+        _fmt(p.fwtm_kev, 2),
         _fmt(p.fwhm_kev, 2),
         _fmt(p.roi_area, 0),
         _fmt(p.net_area, 0),

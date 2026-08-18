@@ -11,7 +11,7 @@ def identify_peaks(peaks: list[Peak], tolerance_kev: float = 2.0) -> dict[str, l
     lines = all_lines()
 
     for peak in peaks:
-        if peak.energy_kev is None:
+        if peak.energy_kev is None or peak.net_area < 10.0:
             continue
         candidates = [
             line for line in lines
@@ -31,7 +31,9 @@ def identify_peaks(peaks: list[Peak], tolerance_kev: float = 2.0) -> dict[str, l
             confirmed[nuclide] = nuclide_peaks
         else:
             for peak in nuclide_peaks:
-                peak.nuclide = f"{nuclide}?"
+                peak.nuclide = ""
+                peak.yield_percent = None
+                peak.matched_energy_kev = None
     return confirmed
 
 

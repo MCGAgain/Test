@@ -44,29 +44,31 @@ def train(
 @app.command()
 def analyze(
     spectrum_file: Path = typer.Argument(..., help="Unknown .xls/.csv/.txt/.spe spectrum file."),
-    calibration_file: Path = typer.Option(Path("calibration.json"), "--calibration", "-c"),
+    calibration_file: Path | None = typer.Option(None, "--calibration", "-c", help="Custom calibration JSON file."),
     output_csv: Path = typer.Option(Path("peak_table.csv"), "--csv", help="Peak table CSV output."),
     output_plot: Path | None = typer.Option(Path("spectrum.png"), "--plot", help="Annotated plot PNG output."),
     tolerance_kev: float = typer.Option(2.0, "--tolerance", help="Nuclide matching tolerance in keV."),
-    prominence_sigma: float = typer.Option(4.0, "--prominence-sigma", help="Peak search sensitivity. Lower finds weaker peaks."),
+    prominence_sigma: float = typer.Option(3.0, "--prominence-sigma", help="Peak search sensitivity. Lower finds weaker peaks."),
     log_y: bool = typer.Option(False, "--log-y", help="Use logarithmic Y axis in plot."),
     auto_calibrate: bool = typer.Option(
-        False, "--auto-calibrate", help="Derive the energy calibration from this spectrum instead of using the calibration file.",
+        True, "--auto-calibrate/--no-auto-calibrate", help="Derive the energy calibration from this spectrum.",
     ),
 ) -> None:
     """Analyze an unknown spectrum and output a screenshot-style peak table."""
     spectrum = read_spectrum(spectrum_file)
-    if auto_calibrate:
+    if calibration_file is not None and Path(calibration_file).exists():
+        calibration = load_calibration(calibration_file)
+        console.print(f"[green]Loaded calibration:[/] {calibration_file} "
+                      f"(E = {calibration.energy_coefficients[0]:.6g} + "
+                      f"{calibration.energy_coefficients[1]:.6g}*CH + "
+                      f"{calibration.energy_coefficients[2]:.6g}*CH^2)")
+    elif auto_calibrate or calibration_file is None:
         calibration = auto_energy_calibration(spectrum)
-        console.print(f"[green]Auto calibration:[/] E = {calibration.energy_coefficients[0]:.6g} + "
+        console.print(f"[green]Self-adaptive calibration:[/] E = {calibration.energy_coefficients[0]:.6g} + "
                       f"{calibration.energy_coefficients[1]:.6g}*CH + "
                       f"{calibration.energy_coefficients[2]:.6g}*CH^2")
     else:
-        cal_path = calibration_file
-        if not Path(cal_path).exists():
-            cal_path = builtin_calibration_path()
-            console.print(f"[yellow]calibration file '{calibration_file}' not found; "
-                          f"using bundled default calibration instead.[/]")
+        cal_path = builtin_calibration_path()
         calibration = load_calibration(cal_path)
     peaks = find_and_fit_peaks(spectrum, calibration, prominence_sigma=prominence_sigma)
     confirmed = identify_peaks(peaks, tolerance_kev)

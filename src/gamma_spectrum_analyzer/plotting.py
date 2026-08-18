@@ -39,10 +39,18 @@ def save_plot(
         ypos = spectrum.counts[int(round(peak.channel))]
         label_energy = peak.matched_energy_kev or peak.energy_kev
         label = f"{peak.nuclide}:{label_energy:.2f}" if peak.nuclide and label_energy else ""
-        ax.axvline(xpos, color="#e91e63", lw=0.8, alpha=0.7)
-        if label:
-            ax.annotate(label, xy=(xpos, ypos), xytext=(0, 16), textcoords="offset points",
-                        ha="center", fontsize=8, arrowprops={"arrowstyle": "-|>", "lw": 0.6})
+        if peak.nuclide:
+            # Highlight confirmed peak ROI
+            roi_l_x = x[peak.roi_l]
+            roi_r_x = x[peak.roi_r]
+            ax.axvspan(roi_l_x, roi_r_x, color="#e91e63", alpha=0.3)
+            ax.axvline(xpos, color="#e91e63", lw=1.0, alpha=0.9)
+            if label:
+                ax.annotate(label, xy=(xpos, ypos), xytext=(0, 20), textcoords="offset points",
+                            ha="center", fontsize=9, fontweight="bold",
+                            arrowprops={"arrowstyle": "-|>", "lw": 0.8, "color": "#111"})
+        elif peak.net_area > 50:
+            ax.axvline(xpos, color="#999999", lw=0.5, ls=":", alpha=0.5)
     fig.tight_layout()
     fig.savefig(output, dpi=180)
     plt.close(fig)

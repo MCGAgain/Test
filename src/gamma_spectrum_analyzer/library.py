@@ -17,7 +17,7 @@ class GammaLine:
 NUCLIDE_LIBRARY: dict[str, list[GammaLine]] = {
     "Co-60": [
         GammaLine("Co-60", 1173.23, 99.85),
-        GammaLine("Co-60", 1332.49, 99.98),
+        GammaLine("Co-60", 1332.49, 99.9826),
     ],
     "Eu-152": [
         GammaLine("Eu-152", 121.78, 28.53),
@@ -40,11 +40,10 @@ NUCLIDE_LIBRARY: dict[str, list[GammaLine]] = {
         GammaLine("Ba-133", 81.00, 32.9),
         GammaLine("Ba-133", 356.01, 62.0),
     ],
-    # 天然铀系/锕系核素：测试样含天然 U，标识需要
     "U-238": [
-        GammaLine("U-238", 63.29, 4.8),       # 子体 Th-234
-        GammaLine("U-238", 92.38, 2.13),      # 子体 Th-234
-        GammaLine("U-238", 1001.03, 0.845),   # 子体 Pa-234m
+        GammaLine("U-238", 63.29, 3.7),        # 子体 Th-234
+        GammaLine("U-238", 92.38, 2.13),       # 子体 Th-234
+        GammaLine("U-238", 1001.03, 0.845),    # 子体 Pa-234m
     ],
     "U-235": [
         GammaLine("U-235", 84.21, 6.6),
@@ -53,20 +52,19 @@ NUCLIDE_LIBRARY: dict[str, list[GammaLine]] = {
         GammaLine("U-235", 185.72, 57.2),
         GammaLine("U-235", 205.31, 5.01),
     ],
-    # 镭钍钾定量任务目标核素（天然土壤谱中的特征 γ 线）
     "Ra-226": [
-        GammaLine("Ra-226", 295.21, 18.4),    # 子体 Pb-214
-        GammaLine("Ra-226", 351.92, 35.6),    # 子体 Pb-214
-        GammaLine("Ra-226", 609.31, 44.8),    # 子体 Bi-214
-        GammaLine("Ra-226", 1120.29, 14.9),   # 子体 Bi-214
-        GammaLine("Ra-226", 1764.49, 15.3),   # 子体 Bi-214
+        GammaLine("Ra-226", 295.21, 18.4),     # 子体 Pb-214
+        GammaLine("Ra-226", 351.92, 35.6),     # 子体 Pb-214
+        GammaLine("Ra-226", 609.31, 44.8),     # 子体 Bi-214
+        GammaLine("Ra-226", 1120.29, 14.9),    # 子体 Bi-214
+        GammaLine("Ra-226", 1764.49, 15.3),    # 子体 Bi-214
     ],
     "Th-232": [
-        GammaLine("Th-232", 238.63, 43.6),    # 子体 Pb-212
-        GammaLine("Th-232", 338.32, 11.3),    # 子体 Ac-228
-        GammaLine("Th-232", 583.19, 85.5),    # 子体 Tl-208（2614.5 keV 超出 ADC 量程，只能用这条）
-        GammaLine("Th-232", 911.20, 25.8),    # 子体 Ac-228
-        GammaLine("Th-232", 969.11, 15.8),    # 子体 Ac-228
+        GammaLine("Th-232", 238.63, 43.6),     # 子体 Pb-212
+        GammaLine("Th-232", 338.32, 11.3),     # 子体 Ac-228
+        GammaLine("Th-232", 583.19, 85.5),     # 子体 Tl-208
+        GammaLine("Th-232", 911.20, 25.8),     # 子体 Ac-228
+        GammaLine("Th-232", 969.11, 15.8),     # 子体 Ac-228
     ],
     "K-40": [
         GammaLine("K-40", 1460.83, 10.66),
@@ -75,14 +73,14 @@ NUCLIDE_LIBRARY: dict[str, list[GammaLine]] = {
 
 
 CONFIRMATION_RULES = {
-    "Co-60": {"required_energies": [1173.23, 1332.49], "min_matches": 2},
-    "Eu-152": {"required_energies": [], "min_matches": 3},
-    "I-131": {"required_energies": [364.49], "min_matches": 2},
-    "Cs-137": {"required_energies": [], "min_matches": 1},
-    "Ba-133": {"required_energies": [], "min_matches": 2},
-    "U-238": {"required_energies": [], "min_matches": 2},
-    "U-235": {"required_energies": [143.76], "min_matches": 2},
-    "Ra-226": {"required_energies": [609.31], "min_matches": 2},
+    "Co-60": {"required_energies": [1173.23], "min_matches": 1},
+    "Eu-152": {"required_energies": [121.78], "min_matches": 3},
+    "I-131": {"required_energies": [364.49], "min_matches": 1},
+    "Cs-137": {"required_energies": [661.66], "min_matches": 1},
+    "Ba-133": {"required_energies": [356.01, 81.00], "min_matches": 2},
+    "U-238": {"required_energies": [], "min_matches": 1},
+    "U-235": {"required_energies": [], "min_matches": 1},
+    "Ra-226": {"required_energies": [609.31], "min_matches": 3},
     "Th-232": {"required_energies": [583.19], "min_matches": 3},
     "K-40": {"required_energies": [1460.83], "min_matches": 1},
 }
