@@ -112,6 +112,11 @@ def auto_energy_calibration(
         # I-131 (364.49 / 284.31 keV)
         if abs(ch - 1227) <= 4: votes_standard += 4.0 * w
         if abs(ch - 957) <= 4: votes_standard += 3.0 * w
+        # Ra/Th/K soil lines (Standard gain: Bi-214 2051, Tl-208 1963, K-40 4916, Pb-212 804)
+        if abs(ch - 2051) <= 4: votes_standard += 5.0 * w
+        if abs(ch - 1963) <= 4: votes_standard += 4.0 * w
+        if abs(ch - 4916) <= 6: votes_standard += 5.0 * w
+        if abs(ch - 804) <= 4: votes_standard += 4.0 * w
         # U-238 / U-235 in test samples
         if abs(ch - 226) <= 4: votes_test += 3.0 * w
         if abs(ch - 302) <= 4: votes_test += 3.0 * w

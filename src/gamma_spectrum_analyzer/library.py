@@ -131,11 +131,13 @@ AUTO_CALIBRATION_LINES: list[tuple[float, float, str]] = [
 #   Th-232: Tl-208 583.2 keV —— 2614.5 keV 超出 8192 道 ADC 量程（0.297 keV/ch × 8192 ≈ 2435 keV），
 #           国标惯用 208Tl 高能线在此数据上不可用，参考结果与 583.2 keV 完全一致，故采用之。
 #   K-40:   1460.8 keV 直接测量
-# 每条仅用一条主 γ 线（与竞赛参考软件一致）；quantify_specific_activity 支持多线加权，
-# 需要更稳健时可在此增加 1120.29/1764.49（Ra）与 911.20（Th）等辅助线。
+# Lines used for the Ra/Th/K specific-activity task.
+#   Ra-226: Bi-214 609.31 keV (yield 44.8%)
+#   Th-232: Pb-212 238.63 keV (yield 43.6%)
+#   K-40:   K-40 1460.83 keV (yield 10.66%)
 RTK_QUANTIFICATION_LINES: dict[str, list[tuple[float, float]]] = {
     "Ra-226": [(609.31, 0.448)],
-    "Th-232": [(583.19, 0.855)],
+    "Th-232": [(238.63, 0.436)],
     "K-40": [(1460.83, 0.1066)],
 }
 

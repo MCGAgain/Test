@@ -93,7 +93,7 @@ def _fit_one_peak(
     bg_area = (bgl + bgr) * n_roi / 2.0
     trap_net = max(float(np.sum(roi_raw)) - bg_area, 0.0)
     gauss_area = float(abs(amp * sigma * math.sqrt(2 * math.pi)))
-    net_area = trap_net if (trap_net > 0 and abs(trap_net - gauss_area) < gauss_area * 0.45) else gauss_area
+    net_area = trap_net if trap_net > 0 else gauss_area
     if roi_area < net_area:
         roi_area = net_area
 
