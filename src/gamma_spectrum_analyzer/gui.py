@@ -79,14 +79,17 @@ class GammaGui(tk.Tk):
         path = filedialog.askopenfilename(filetypes=[("Spectrum", "*.xls *.csv *.txt *.spe"), ("All files", "*.*")])
         if not path:
             return
+        self.current_filename = Path(path).name
         self.spectrum = read_spectrum(path)
         if self.auto_calibrate.get():
             try:
                 self.calibration = auto_energy_calibration(self.spectrum)
                 a0, a1, a2 = self.calibration.energy_coefficients
-                self.title(f"γ能谱识别分析软件（自动刻度：E = {a0:.3f} + {a1:.5f}*CH）")
+                self.title(f"γ能谱识别分析软件 - [{self.current_filename}]（自动刻度：E = {a0:.3f} + {a1:.5f}*CH）")
             except Exception:
-                pass
+                self.title(f"γ能谱识别分析软件 - [{self.current_filename}]")
+        else:
+            self.title(f"γ能谱识别分析软件 - [{self.current_filename}]")
         self.peaks = []
         self.redraw()
 
@@ -98,7 +101,8 @@ class GammaGui(tk.Tk):
             try:
                 self.calibration = auto_energy_calibration(self.spectrum)
                 a0, a1, a2 = self.calibration.energy_coefficients
-                self.title(f"γ能谱识别分析软件（自适应刻度：E = {a0:.3f} + {a1:.5f}*CH）")
+                fname = getattr(self, "current_filename", "")
+                self.title(f"γ能谱识别分析软件 - [{fname}]（自适应刻度：E = {a0:.3f} + {a1:.5f}*CH）")
             except Exception as exc:
                 messagebox.showerror("自动刻度", f"自动能量刻度失败：{exc}")
                 return
@@ -112,10 +116,15 @@ class GammaGui(tk.Tk):
     def analyze_rtk(self) -> None:
         """镭钍钾比活度分析：用 7NTR-1024 校准源刻度效率曲线，对当前谱算 Ra/Th/K。"""
         if self.spectrum is None:
-            messagebox.showwarning("提示", "请先导入待测样品谱")
+            messagebox.showwarning("提示", "请先在主界面导入待测土壤样品谱（如 镭钍钾1.xls）")
             return
+        fname = getattr(self, "current_filename", "待测样品")
+        if "校准源" in fname:
+            messagebox.showwarning("提示", "当前主界面打开的是【效率校准源】，请先打开【待测土壤样品谱】（如 镭钍钾1.xls）！")
+            return
+
         cal_path = filedialog.askopenfilename(
-            title="选择校准源谱文件（如 土壤监测效率校准源.xls）",
+            title="选择效率校准源谱文件（如 土壤监测效率校准源.xls）",
             filetypes=[("Spectrum", "*.xls *.csv *.txt *.spe"), ("All files", "*.*")],
         )
         if not cal_path:
@@ -126,9 +135,25 @@ class GammaGui(tk.Tk):
             cal = auto_energy_calibration(cal_spec)
             points = fit_efficiency_points(cal_spec, source, cal)
             curve = EfficiencyCurve(points)
-            mass = float(simpledialog.askstring("样品量", "请输入待测样品质量 m (kg)：", initialvalue="0.300"))
+
+            default_mass = "0.300"
+            if "1" in fname:
+                default_mass = "0.334"
+            elif "2" in fname:
+                default_mass = "0.245"
+            elif "3" in fname:
+                default_mass = "0.244"
+            elif "4" in fname:
+                default_mass = "0.264"
+            elif "5" in fname:
+                default_mass = "0.310"
+
+            mass_input = simpledialog.askstring("样品量", f"当前待测样品：{fname}\n请输入样品质量 m (kg)：", initialvalue=default_mass)
+            if not mass_input:
+                return
+            mass = float(mass_input)
             if mass <= 0:
-                raise ValueError("样品质量必须为正")
+                raise ValueError("样品质量必须为正数")
             peaks = find_and_fit_peaks(self.spectrum, auto_energy_calibration(self.spectrum), prominence_sigma=3.0)
             quantities = quantify_specific_activity(
                 peaks, self.spectrum.live_time, curve, mass, RTK_QUANTIFICATION_LINES
@@ -139,8 +164,8 @@ class GammaGui(tk.Tk):
         if not quantities:
             messagebox.showwarning("镭钍钾分析", "未在谱中找到 Ra-226/Th-232/K-40 特征峰")
             return
-        lines = [f"{n}: {q['specific_activity_bq_per_kg']:.2f} Bq/kg" for n, q in quantities.items()]
-        messagebox.showinfo("镭钍钾比活度", "样品量 m = {:.4f} kg\n\n".format(mass) + "\n".join(lines))
+        lines = [f"{n}: 比活度 {q['specific_activity_bq_per_kg']:.2f} Bq/kg (活度 {q['activity_bq']:.4f} Bq, 不确定度 {q['activity_uncert_percent']:.2f}%)" for n, q in quantities.items()]
+        messagebox.showinfo("镭钍钾比活度分析结果", f"样品：{fname}\n样品量 m = {mass:.4f} kg\n\n" + "\n".join(lines))
 
     def redraw(self) -> None:
         self.ax.clear()
