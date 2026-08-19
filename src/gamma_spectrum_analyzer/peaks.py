@@ -75,8 +75,8 @@ def _fit_one_peak(
 
     fwhm_ch = 2.354820045 * abs(sigma)
     fwtm_ch = 4.29193426 * abs(sigma)
-    roi_l = max(1, int(round(center - 1.8 * fwhm_ch)))
-    roi_r = min(len(spectrum.counts), int(round(center + 1.8 * fwhm_ch)))
+    roi_l = max(1, int(round(center - 1.60 * fwhm_ch)))
+    roi_r = min(len(spectrum.counts), int(round(center + 1.60 * fwhm_ch)))
     if roi_r <= roi_l:
         roi_l = max(1, int(round(center - 2)))
         roi_r = min(len(spectrum.counts), int(round(center + 2)))
@@ -88,9 +88,8 @@ def _fit_one_peak(
 
     roi_raw = spectrum.counts[idx_l:idx_r + 1]
     n_roi = len(roi_raw)
-    n_end = min(2, n_roi)
-    bgl = float(np.mean(roi_raw[:n_end])) if n_end > 0 else 0.0
-    bgr = float(np.mean(roi_raw[-n_end:])) if n_end > 0 else 0.0
+    bgl = float(roi_raw[0]) if n_roi > 0 else 0.0
+    bgr = float(roi_raw[-1]) if n_roi > 0 else 0.0
     bg_area = (bgl + bgr) * n_roi / 2.0
     trap_net = max(float(np.sum(roi_raw)) - bg_area, 0.0)
     gauss_area = float(abs(amp * sigma * math.sqrt(2 * math.pi)))
@@ -98,9 +97,8 @@ def _fit_one_peak(
     if roi_area < net_area:
         roi_area = net_area
 
-    sum_end = float(np.sum(roi_raw[:n_end]) + np.sum(roi_raw[-n_end:]))
     g_raw = float(np.sum(roi_raw))
-    var = g_raw + (float(n_roi) / (2.0 * float(n_end))) ** 2 * sum_end
+    var = g_raw + (float(n_roi) / 2.0) ** 2 * (bgl + bgr)
     area_uncert = 100.0 * math.sqrt(max(var, 1.0)) / max(net_area, 1.0)
 
     energy = float(calibration.energy(center)) if calibration else None
