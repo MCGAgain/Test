@@ -79,7 +79,8 @@ class GammaGui(tk.Tk):
         path = filedialog.askopenfilename(filetypes=[("Spectrum", "*.xls *.csv *.txt *.spe"), ("All files", "*.*")])
         if not path:
             return
-        self.current_filename = Path(path).name
+        self.current_filepath = Path(path)
+        self.current_filename = self.current_filepath.name
         self.spectrum = read_spectrum(path)
         if self.auto_calibrate.get():
             try:
@@ -123,12 +124,36 @@ class GammaGui(tk.Tk):
             messagebox.showwarning("提示", "当前主界面打开的是【效率校准源】，请先打开【待测土壤样品谱】（如 镭钍钾1.xls）！")
             return
 
-        cal_path = filedialog.askopenfilename(
-            title="选择效率校准源谱文件（如 土壤监测效率校准源.xls）",
-            filetypes=[("Spectrum", "*.xls *.csv *.txt *.spe"), ("All files", "*.*")],
-        )
-        if not cal_path:
+        # 尝试自动定位效率校准源谱文件
+        auto_cal_path = None
+        current_fp = getattr(self, "current_filepath", None)
+        search_dirs = [Path.cwd()]
+        if current_fp:
+            search_dirs.extend([current_fp.parent, current_fp.parent.parent, current_fp.parent.parent.parent])
+        for sdir in search_dirs:
+            candidates = list(sdir.rglob("*土壤监测效率校准源*.xls"))
+            if candidates:
+                auto_cal_path = candidates[0]
+                break
+
+        cal_path = auto_cal_path
+        if cal_path is None or not Path(cal_path).exists():
+            cal_path = filedialog.askopenfilename(
+                title="选择效率校准源谱文件（土壤监测效率校准源.xls）",
+                filetypes=[("Spectrum", "*.xls *.csv *.txt *.spe"), ("All files", "*.*")],
+            )
+            if not cal_path:
+                return
+
+        # 防呆检查：如果用户误将当前待测样品作为效率校准源选中
+        if current_fp and Path(cal_path).resolve() == current_fp.resolve():
+            messagebox.showerror(
+                "文件选择错误",
+                f"您选择的文件【{Path(cal_path).name}】是待测土壤样品本身，而非【土壤监测效率校准源.xls】！\n\n"
+                "请选择 7NTR-1024 标准源文件（土壤监测效率校准源.xls）以构建探测效率曲线。"
+            )
             return
+
         try:
             cal_spec = read_spectrum(cal_path)
             source = CalibrationSource.from_json(builtin_efficiency_path())
