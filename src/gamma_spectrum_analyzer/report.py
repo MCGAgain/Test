@@ -16,6 +16,8 @@ HEADERS = [
 
 
 def peak_rows(peaks: list[Peak]) -> list[list[str]]:
+    filtered = [p for p in peaks if p.nuclide or (p.net_area >= 40.0 and p.area_uncert_percent <= 50.0)]
+    display_peaks = filtered if filtered else peaks
     return [[
         _fmt(p.channel, 3),
         str(p.roi_l),
@@ -32,7 +34,7 @@ def peak_rows(peaks: list[Peak]) -> list[list[str]]:
         _fmt(p.activity_bq, 6),
         _fmt(p.activity_uncert_percent, 4),
         _fmt(p.count_rate, 3),
-    ] for p in peaks]
+    ] for p in display_peaks]
 
 
 def write_peak_csv(peaks: list[Peak], path: str | Path) -> None:

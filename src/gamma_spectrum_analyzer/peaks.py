@@ -38,7 +38,7 @@ def find_and_fit_peaks(
         half_window = int(max(6, min(25, approx_fwhm * 2.5)))
         left = max(0, int(idx) - half_window)
         right = min(len(spectrum.counts) - 1, int(idx) + half_window)
-        peak = _fit_one_peak(spectrum, idx, approx_fwhm, left, right, calibration)
+        peak = _fit_one_peak(spectrum, corrected, idx, approx_fwhm, left, right, calibration)
         if peak.net_area > 0:
             result.append(peak)
     return sorted(result, key=lambda p: p.channel)
@@ -46,6 +46,7 @@ def find_and_fit_peaks(
 
 def _fit_one_peak(
     spectrum: Spectrum,
+    corrected: np.ndarray,
     idx: int,
     approx_fwhm: float,
     left: int,
@@ -73,16 +74,19 @@ def _fit_one_peak(
 
     fwhm_ch = 2.354820045 * abs(sigma)
     fwtm_ch = 4.29193426 * abs(sigma)
-    roi_l = max(0, int(round(center - 2.5 * fwhm_ch)))
-    roi_r = min(len(spectrum.counts) - 1, int(round(center + 2.5 * fwhm_ch)))
-    roi_y = spectrum.counts[roi_l:roi_r + 1]
-    roi_x = spectrum.channels[roi_l:roi_r + 1]
-    local_bg = base + slope * (roi_x - center)
-    roi_area = float(np.sum(roi_y))
+    roi_l = max(0, int(round(center - 1.8 * fwhm_ch)))
+    roi_r = min(len(spectrum.counts) - 1, int(round(center + 1.8 * fwhm_ch)))
+    
+    # Continuum-subtracted ROI Area and Gaussian Net Area matching standard gamma spectroscopy
+    roi_corr = corrected[roi_l:roi_r + 1]
+    roi_area = float(np.sum(roi_corr))
     gaussian_area = float(abs(amp * sigma * math.sqrt(2 * math.pi)))
-    bg_sub_area = float(np.sum(np.maximum(roi_y - local_bg, 0)))
-    net_area = gaussian_area if np.isfinite(gaussian_area) and gaussian_area > 0 else bg_sub_area
-    area_uncert = 100.0 * math.sqrt(max(roi_area, 1.0)) / max(net_area, 1.0)
+    net_area = gaussian_area if np.isfinite(gaussian_area) and gaussian_area > 0 else roi_area
+    if roi_area < net_area:
+        roi_area = net_area
+    
+    bg_in_roi = max(roi_area - net_area, 0.0)
+    area_uncert = 100.0 * math.sqrt(max(net_area + 2.0 * bg_in_roi, 1.0)) / max(net_area, 1.0)
 
     energy = float(calibration.energy(center)) if calibration else None
     fwhm_kev = None
