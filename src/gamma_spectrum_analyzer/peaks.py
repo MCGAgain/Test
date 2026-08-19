@@ -16,7 +16,7 @@ def find_and_fit_peaks(
     prominence_sigma: float = 3.0,
     distance: int = 8,
     smooth_window: int = 7,
-    snip_iterations: int = 30,
+    snip_iterations: int = 18,
     max_peaks: int = 150,
 ) -> list[Peak]:
     corrected, background = corrected_counts(spectrum.counts, smooth_window, snip_iterations)
@@ -75,27 +75,31 @@ def _fit_one_peak(
 
     fwhm_ch = 2.354820045 * abs(sigma)
     fwtm_ch = 4.29193426 * abs(sigma)
-    roi_l = max(1, int(round(center - 2.2 * fwhm_ch)))
-    roi_r = min(len(spectrum.counts), int(round(center + 2.2 * fwhm_ch)))
+    roi_l = max(1, int(round(center - 1.8 * fwhm_ch)))
+    roi_r = min(len(spectrum.counts), int(round(center + 1.8 * fwhm_ch)))
     if roi_r <= roi_l:
         roi_l = max(1, int(round(center - 2)))
         roi_r = min(len(spectrum.counts), int(round(center + 2)))
 
     idx_l = roi_l - 1
     idx_r = roi_r - 1
-    roi_counts = spectrum.counts[idx_l:idx_r + 1]
-    roi_area = float(np.sum(roi_counts))
+    roi_corr = corrected[idx_l:idx_r + 1]
+    roi_area = float(np.sum(roi_corr))
 
-    n_end = min(2, len(roi_counts))
-    bgl = float(np.mean(roi_counts[:n_end])) if n_end > 0 else 0.0
-    bgr = float(np.mean(roi_counts[-n_end:])) if n_end > 0 else 0.0
-    n_roi = len(roi_counts)
+    roi_raw = spectrum.counts[idx_l:idx_r + 1]
+    n_roi = len(roi_raw)
+    n_end = min(2, n_roi)
+    bgl = float(np.mean(roi_raw[:n_end])) if n_end > 0 else 0.0
+    bgr = float(np.mean(roi_raw[-n_end:])) if n_end > 0 else 0.0
     bg_area = (bgl + bgr) * n_roi / 2.0
-    trap_net = max(roi_area - bg_area, 0.0)
+    trap_net = max(float(np.sum(roi_raw)) - bg_area, 0.0)
     gauss_area = float(abs(amp * sigma * math.sqrt(2 * math.pi)))
-    net_area = trap_net if trap_net > 0 else gauss_area
+    net_area = trap_net if (trap_net > 0 and abs(trap_net - gauss_area) < gauss_area * 0.45) else gauss_area
+    if roi_area < net_area:
+        roi_area = net_area
 
-    area_uncert = 100.0 * math.sqrt(max(net_area + 2.0 * bg_area, 1.0)) / max(net_area, 1.0)
+    bg_total = max(float(np.sum(roi_raw)) - net_area, 0.0)
+    area_uncert = 100.0 * math.sqrt(max(net_area + 2.0 * bg_total, 1.0)) / max(net_area, 1.0)
 
     energy = float(calibration.energy(center)) if calibration else None
     fwhm_kev = None

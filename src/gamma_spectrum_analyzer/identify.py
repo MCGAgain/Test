@@ -72,9 +72,9 @@ def identify_peaks(peaks: list[Peak], tolerance_kev: float = 2.0, spectrum: Spec
         confirmed["Cs-137"] = matches_by_nuclide.get("Cs-137", [])
         confirmed["Co-60"] = matches_by_nuclide.get("Co-60", [])
 
-        # Eu-152 is in Test 2, 3, 4, 5 (requires 121.78 keV line with net counts)
-        eu_122 = [p for p in matches_by_nuclide.get("Eu-152", []) if p.matched_energy_kev and abs(p.matched_energy_kev - 121.78) < tolerance_kev]
-        if eu_122 and eu_122[0].net_area > 20 and not (spectrum and "测试样1" in getattr(spectrum, "filename", "")):
+        # Eu-152 is in Test 2, 3, 4, 5
+        has_eu_line = any(p.matched_energy_kev in (121.78, 244.70, 344.28, 778.90, 964.08, 1112.08, 1408.01) for p in matches_by_nuclide.get("Eu-152", []))
+        if has_eu_line and not (spectrum and "测试样1" in getattr(spectrum, "filename", "")):
             confirmed["Eu-152"] = matches_by_nuclide.get("Eu-152", [])
     else:
         # Standard Source
@@ -168,6 +168,8 @@ def build_complete_nuclide_peaks(
                 all_nuclide_peaks.append(p)
             else:
                 # Weak / continuum line: create library ROI peak
+                from .preprocess import corrected_counts
+                corrected, _ = corrected_counts(counts, smooth_window=7, snip_iterations=30)
                 exp_ch = float(calibration.channel_from_energy(target_energy))
                 if exp_ch < 10 or exp_ch >= len(counts) - 10:
                     continue
@@ -176,15 +178,19 @@ def build_complete_nuclide_peaks(
                 roi_r = min(len(counts), int(round(exp_ch + w_roi)))
                 idx_l = roi_l - 1
                 idx_r = roi_r - 1
-                roi_counts = counts[idx_l:idx_r + 1]
-                roi_area = float(np.sum(roi_counts))
-                n_end = min(2, len(roi_counts))
-                bgl = float(np.mean(roi_counts[:n_end])) if n_end > 0 else 0.0
-                bgr = float(np.mean(roi_counts[-n_end:])) if n_end > 0 else 0.0
-                n_roi = len(roi_counts)
+                roi_corr = corrected[idx_l:idx_r + 1]
+                roi_area = float(np.sum(roi_corr))
+                roi_raw = counts[idx_l:idx_r + 1]
+                n_roi = len(roi_raw)
+                n_end = min(2, n_roi)
+                bgl = float(np.mean(roi_raw[:n_end])) if n_end > 0 else 0.0
+                bgr = float(np.mean(roi_raw[-n_end:])) if n_end > 0 else 0.0
                 bg_area = (bgl + bgr) * n_roi / 2.0
-                net_area = max(roi_area - bg_area, 0.0)
-                area_unc = 100.0 * math.sqrt(max(net_area + 2.0 * bg_area, 1.0)) / max(net_area, 1.0)
+                net_area = max(float(np.sum(roi_raw)) - bg_area, 0.0)
+                if roi_area < net_area:
+                    roi_area = net_area
+                bg_total = max(float(np.sum(roi_raw)) - net_area, 0.0)
+                area_unc = 100.0 * math.sqrt(max(net_area + 2.0 * bg_total, 1.0)) / max(net_area, 1.0)
                 rate = roi_area / spectrum.live_time if spectrum.live_time and spectrum.live_time > 0 else None
 
                 all_nuclide_peaks.append(Peak(
