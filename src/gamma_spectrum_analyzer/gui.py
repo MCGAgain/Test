@@ -10,7 +10,7 @@ from matplotlib.figure import Figure
 
 from .calibration import auto_energy_calibration, load_calibration
 from .efficiency import CalibrationSource, EfficiencyCurve, fit_efficiency_points
-from .identify import identify_peaks
+from .identify import build_complete_nuclide_peaks, identify_peaks
 from .io import read_spectrum
 from .library import RTK_QUANTIFICATION_LINES
 from .models import Calibration, Peak, Spectrum
@@ -109,7 +109,9 @@ class GammaGui(tk.Tk):
                 return
         calibration = self.calibration
         self.peaks = find_and_fit_peaks(self.spectrum, calibration, prominence_sigma=3.0)
-        identify_peaks(self.peaks)
+        confirmed = identify_peaks(self.peaks, spectrum=self.spectrum)
+        if confirmed:
+            self.peaks = build_complete_nuclide_peaks(self.spectrum, calibration, self.peaks, confirmed)
         fill_quantification(self.peaks, self.spectrum, calibration)
         self.redraw()
         self.show_peak_window()

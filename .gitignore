@@ -6,11 +6,12 @@ dist/
 build/
 
 # runtime output artifacts
-*.png
-calibration.json
-rtk_report.csv
-peak_table.csv
-efficiency_curve.json
+/*.png
+/calibration.json
+/rtk_report.csv
+/peak_table.csv
+/efficiency_curve.json
 *.spec
 .DS_Store
 output/
+标准源/

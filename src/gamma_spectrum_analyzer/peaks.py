@@ -13,15 +13,15 @@ from .preprocess import corrected_counts
 def find_and_fit_peaks(
     spectrum: Spectrum,
     calibration: Calibration | None = None,
-    prominence_sigma: float = 5.0,
-    distance: int = 12,
+    prominence_sigma: float = 3.0,
+    distance: int = 8,
     smooth_window: int = 7,
-    snip_iterations: int = 40,
-    max_peaks: int = 90,
+    snip_iterations: int = 30,
+    max_peaks: int = 150,
 ) -> list[Peak]:
     corrected, background = corrected_counts(spectrum.counts, smooth_window, snip_iterations)
     noise = _robust_sigma(corrected)
-    prominence = max(noise * prominence_sigma, np.percentile(corrected, 95) * 0.015, 5.0)
+    prominence = max(noise * prominence_sigma, np.percentile(corrected, 95) * 0.005, 3.0)
     peak_idx, props = find_peaks(corrected, prominence=prominence, distance=distance)
     if len(peak_idx) == 0:
         return []
@@ -35,7 +35,7 @@ def find_and_fit_peaks(
     result: list[Peak] = []
     for j, idx in enumerate(peak_idx):
         approx_fwhm = max(float(widths[0][j]), 2.5)
-        half_window = int(max(6, min(25, approx_fwhm * 2.5)))
+        half_window = int(max(6, min(30, approx_fwhm * 3.0)))
         left = max(0, int(idx) - half_window)
         right = min(len(spectrum.counts) - 1, int(idx) + half_window)
         peak = _fit_one_peak(spectrum, corrected, idx, approx_fwhm, left, right, calibration)
@@ -58,50 +58,56 @@ def _fit_one_peak(
     b0 = float(np.median(np.r_[y[: max(2, len(y) // 6)], y[-max(2, len(y) // 6):]]))
     amp0 = max(float(spectrum.counts[idx] - b0), 1.0)
     sigma0 = max(approx_fwhm / 2.355, 1.0)
+    center0 = float(spectrum.channels[idx])
 
     try:
         popt, pcov = curve_fit(
             _gaussian_linear,
             x,
             y,
-            p0=[amp0, float(spectrum.channels[idx]), sigma0, b0, 0.0],
-            bounds=([0, x[0], 0.3, 0, -np.inf], [np.inf, x[-1], 30.0, np.inf, np.inf]),
-            maxfev=400,
+            p0=[amp0, center0, sigma0, b0, 0.0],
+            bounds=([0, x[0], 0.3, 0, -np.inf], [np.inf, x[-1], 25.0, np.inf, np.inf]),
+            maxfev=300,
         )
         amp, center, sigma, base, slope = map(float, popt)
     except Exception:
-        amp, center, sigma, base, slope = amp0, float(spectrum.channels[idx]), sigma0, b0, 0.0
+        amp, center, sigma, base, slope = amp0, center0, sigma0, b0, 0.0
 
     fwhm_ch = 2.354820045 * abs(sigma)
     fwtm_ch = 4.29193426 * abs(sigma)
-    roi_l = max(0, int(round(center - 1.8 * fwhm_ch)))
-    roi_r = min(len(spectrum.counts) - 1, int(round(center + 1.8 * fwhm_ch)))
-    
-    # Continuum-subtracted ROI Area and Gaussian Net Area matching standard gamma spectroscopy
-    roi_corr = corrected[roi_l:roi_r + 1]
-    roi_area = float(np.sum(roi_corr))
-    gaussian_area = float(abs(amp * sigma * math.sqrt(2 * math.pi)))
-    net_area = gaussian_area if np.isfinite(gaussian_area) and gaussian_area > 0 else roi_area
-    if roi_area < net_area:
-        roi_area = net_area
-    
-    bg_in_roi = max(roi_area - net_area, 0.0)
-    area_uncert = 100.0 * math.sqrt(max(net_area + 2.0 * bg_in_roi, 1.0)) / max(net_area, 1.0)
+    roi_l = max(1, int(round(center - 2.2 * fwhm_ch)))
+    roi_r = min(len(spectrum.counts), int(round(center + 2.2 * fwhm_ch)))
+    if roi_r <= roi_l:
+        roi_l = max(1, int(round(center - 2)))
+        roi_r = min(len(spectrum.counts), int(round(center + 2)))
+
+    idx_l = roi_l - 1
+    idx_r = roi_r - 1
+    roi_counts = spectrum.counts[idx_l:idx_r + 1]
+    roi_area = float(np.sum(roi_counts))
+
+    n_end = min(2, len(roi_counts))
+    bgl = float(np.mean(roi_counts[:n_end])) if n_end > 0 else 0.0
+    bgr = float(np.mean(roi_counts[-n_end:])) if n_end > 0 else 0.0
+    n_roi = len(roi_counts)
+    bg_area = (bgl + bgr) * n_roi / 2.0
+    trap_net = max(roi_area - bg_area, 0.0)
+    gauss_area = float(abs(amp * sigma * math.sqrt(2 * math.pi)))
+    net_area = trap_net if trap_net > 0 else gauss_area
+
+    area_uncert = 100.0 * math.sqrt(max(net_area + 2.0 * bg_area, 1.0)) / max(net_area, 1.0)
 
     energy = float(calibration.energy(center)) if calibration else None
     fwhm_kev = None
     fwtm_kev = None
     if calibration and energy is not None:
-        e_l = float(calibration.energy(center - fwhm_ch / 2))
-        e_r = float(calibration.energy(center + fwhm_ch / 2))
-        fwhm_kev = abs(e_r - e_l)
-        wt_l = float(calibration.energy(center - fwtm_ch / 2))
-        wt_r = float(calibration.energy(center + fwtm_ch / 2))
-        fwtm_kev = abs(wt_r - wt_l)
+        gain = float(calibration.energy(center + 0.5) - calibration.energy(center - 0.5))
+        fwhm_kev = fwhm_ch * abs(gain)
+        fwtm_kev = fwtm_ch * abs(gain)
 
     count_rate = None
     if spectrum.live_time and spectrum.live_time > 0:
-        count_rate = net_area / spectrum.live_time
+        count_rate = roi_area / spectrum.live_time
 
     return Peak(
         channel=center,

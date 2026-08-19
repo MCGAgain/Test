@@ -15,23 +15,32 @@ HEADERS = [
 ]
 
 
+def _fmt_sci(value) -> str:
+    if value is None or not (isinstance(value, (int, float)) and value > 0):
+        return ""
+    try:
+        return f"{float(value):.4E}"
+    except Exception:
+        return str(value)
+
+
 def peak_rows(peaks: list[Peak]) -> list[list[str]]:
-    filtered = [p for p in peaks if p.nuclide or (p.net_area >= 40.0 and p.area_uncert_percent <= 50.0)]
+    filtered = [p for p in peaks if p.nuclide]
     display_peaks = filtered if filtered else peaks
     return [[
         _fmt(p.channel, 3),
         str(p.roi_l),
         str(p.roi_r),
         _fmt(p.energy_kev, 3),
-        _fmt(p.fwtm_kev, 2),
-        _fmt(p.fwhm_kev, 2),
+        _fmt(p.fwtm_kev, 2) if p.fwtm_kev else "-",
+        _fmt(p.fwhm_kev, 2) if p.fwhm_kev else "-",
         _fmt(p.roi_area, 0),
         _fmt(p.net_area, 0),
         _fmt(p.area_uncert_percent, 4),
         p.nuclide,
-        _fmt(p.yield_percent, 3),
+        _fmt(p.yield_percent, 4),
         _fmt(p.efficiency, 6),
-        _fmt(p.activity_bq, 6),
+        _fmt_sci(p.activity_bq),
         _fmt(p.activity_uncert_percent, 4),
         _fmt(p.count_rate, 3),
     ] for p in display_peaks]

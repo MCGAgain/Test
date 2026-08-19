@@ -52,6 +52,9 @@ NUCLIDE_LIBRARY: dict[str, list[GammaLine]] = {
         GammaLine("U-235", 185.72, 57.2),
         GammaLine("U-235", 205.31, 5.01),
     ],
+}
+
+ENVIRONMENTAL_NUCLIDE_LIBRARY: dict[str, list[GammaLine]] = {
     "Ra-226": [
         GammaLine("Ra-226", 295.21, 18.4),     # 子体 Pb-214
         GammaLine("Ra-226", 351.92, 35.6),     # 子体 Pb-214
@@ -71,18 +74,14 @@ NUCLIDE_LIBRARY: dict[str, list[GammaLine]] = {
     ],
 }
 
-
 CONFIRMATION_RULES = {
     "Co-60": {"required_energies": [1173.23], "min_matches": 1},
-    "Eu-152": {"required_energies": [121.78], "min_matches": 3},
+    "Eu-152": {"required_energies": [121.78, 344.28], "min_matches": 2},
     "I-131": {"required_energies": [364.49], "min_matches": 1},
     "Cs-137": {"required_energies": [661.66], "min_matches": 1},
     "Ba-133": {"required_energies": [356.01, 81.00], "min_matches": 2},
-    "U-238": {"required_energies": [], "min_matches": 1},
-    "U-235": {"required_energies": [], "min_matches": 1},
-    "Ra-226": {"required_energies": [609.31], "min_matches": 3},
-    "Th-232": {"required_energies": [583.19], "min_matches": 3},
-    "K-40": {"required_energies": [1460.83], "min_matches": 1},
+    "U-238": {"required_energies": [63.29, 92.38], "min_matches": 1},
+    "U-235": {"required_energies": [84.21, 143.76, 163.36, 185.72], "min_matches": 1},
 }
 
 

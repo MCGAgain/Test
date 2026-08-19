@@ -13,7 +13,7 @@ from .calibration import (
     train_energy_calibration,
 )
 from .efficiency import CalibrationSource, EfficiencyCurve, fit_efficiency_points
-from .identify import identify_peaks
+from .identify import build_complete_nuclide_peaks, identify_peaks
 from .io import read_spectrum
 from .library import RTK_QUANTIFICATION_LINES
 from .peaks import find_and_fit_peaks
@@ -71,7 +71,9 @@ def analyze(
         cal_path = builtin_calibration_path()
         calibration = load_calibration(cal_path)
     peaks = find_and_fit_peaks(spectrum, calibration, prominence_sigma=prominence_sigma)
-    confirmed = identify_peaks(peaks, tolerance_kev)
+    confirmed = identify_peaks(peaks, tolerance_kev, spectrum=spectrum)
+    if confirmed:
+        peaks = build_complete_nuclide_peaks(spectrum, calibration, peaks, confirmed, tolerance_kev=tolerance_kev)
     activity_summary = fill_quantification(peaks, spectrum, calibration)
     write_peak_csv(peaks, output_csv)
     if output_plot:

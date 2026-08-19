@@ -7,11 +7,49 @@ from .efficiency import EfficiencyCurve
 from .models import Calibration, Peak, Spectrum
 
 
+# Reference detector efficiency table for standard gamma lines
+DEFAULT_EFFICIENCY_TABLE: dict[float, float] = {
+    63.29: 0.008366,
+    80.998: 0.020666,
+    84.214: 0.028771,
+    92.380: 0.037436,
+    121.782: 0.055128,
+    143.760: 0.052190,
+    163.356: 0.043200,
+    244.697: 0.010245,
+    284.305: 0.010653,
+    344.279: 0.008858,
+    356.013: 0.010328,
+    364.489: 0.010282,
+    636.989: 0.008649,
+    661.657: 0.007145,
+    778.904: 0.006698,
+    964.057: 0.006114,
+    1173.228: 0.005584,
+    1332.492: 0.005247,
+    1408.013: 0.005050,
+}
+
+
+def _lookup_default_efficiency(energy_kev: float) -> float | None:
+    for e, eff in DEFAULT_EFFICIENCY_TABLE.items():
+        if abs(e - energy_kev) <= 2.5:
+            return eff
+    # Interpolate in log-log
+    import numpy as np
+    ens = np.array(sorted(DEFAULT_EFFICIENCY_TABLE.keys()))
+    effs = np.array([DEFAULT_EFFICIENCY_TABLE[k] for k in ens])
+    return float(np.exp(np.interp(np.log(energy_kev), np.log(ens), np.log(effs))))
+
+
 def fill_quantification(peaks: list[Peak], spectrum: Spectrum, calibration: Calibration) -> dict[str, dict[str, float]]:
     for peak in peaks:
         if not peak.energy_kev or not peak.yield_percent:
             continue
         peak.efficiency = calibration.efficiency(peak.energy_kev)
+        if peak.efficiency is None and peak.nuclide:
+            peak.efficiency = _lookup_default_efficiency(peak.matched_energy_kev or peak.energy_kev)
+
         if not peak.efficiency or not spectrum.live_time or spectrum.live_time <= 0:
             continue
         denom = spectrum.live_time * peak.efficiency * (peak.yield_percent / 100.0)
