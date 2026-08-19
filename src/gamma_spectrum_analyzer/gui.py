@@ -131,26 +131,39 @@ class GammaGui(tk.Tk):
         if current_fp:
             search_dirs.extend([current_fp.parent, current_fp.parent.parent, current_fp.parent.parent.parent])
         for sdir in search_dirs:
-            candidates = list(sdir.rglob("*土壤监测效率校准源*.xls"))
+            candidates = [p for p in sdir.rglob("*土壤监测效率校准源*.xls") if not current_fp or p.resolve() != current_fp.resolve()]
             if candidates:
                 auto_cal_path = candidates[0]
                 break
 
-        cal_path = auto_cal_path
-        if cal_path is None or not Path(cal_path).exists():
+        cal_path = None
+        if auto_cal_path and auto_cal_path.exists():
+            # 自动找到时，提示用户确认或选择其他文件
+            use_auto = messagebox.askyesno(
+                "效率校准源",
+                f"已自动定位到效率校准源：\n【{auto_cal_path.name}】\n({auto_cal_path.parent})\n\n"
+                "是否直接使用该校准源？\n（选择【否】可手动选择其他自定义校准源文件）",
+            )
+            if use_auto:
+                cal_path = str(auto_cal_path)
+
+        # 未搜到或用户选择手动指定
+        if not cal_path:
+            init_dir = str(current_fp.parent) if current_fp else str(Path.cwd())
             cal_path = filedialog.askopenfilename(
-                title="选择效率校准源谱文件（土壤监测效率校准源.xls）",
+                title="请选择效率校准源谱文件（如 土壤监测效率校准源.xls）",
+                initialdir=init_dir,
                 filetypes=[("Spectrum", "*.xls *.csv *.txt *.spe"), ("All files", "*.*")],
             )
             if not cal_path:
                 return
 
-        # 防呆检查：如果用户误将当前待测样品作为效率校准源选中
+        # 防呆检查：如果用户手动误将当前待测样品作为效率校准源选中
         if current_fp and Path(cal_path).resolve() == current_fp.resolve():
             messagebox.showerror(
                 "文件选择错误",
-                f"您选择的文件【{Path(cal_path).name}】是待测土壤样品本身，而非【土壤监测效率校准源.xls】！\n\n"
-                "请选择 7NTR-1024 标准源文件（土壤监测效率校准源.xls）以构建探测效率曲线。"
+                f"您选择的文件【{Path(cal_path).name}】是待测土壤样品本身，而非【效率校准源】！\n\n"
+                "请选择 7NTR-1024 标准源文件（如 土壤监测效率校准源.xls）以构建探测效率曲线。"
             )
             return
 
