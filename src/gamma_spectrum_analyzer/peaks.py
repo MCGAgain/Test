@@ -98,8 +98,10 @@ def _fit_one_peak(
     if roi_area < net_area:
         roi_area = net_area
 
-    bg_total = max(float(np.sum(roi_raw)) - net_area, 0.0)
-    area_uncert = 100.0 * math.sqrt(max(net_area + 2.0 * bg_total, 1.0)) / max(net_area, 1.0)
+    sum_end = float(np.sum(roi_raw[:n_end]) + np.sum(roi_raw[-n_end:]))
+    g_raw = float(np.sum(roi_raw))
+    var = g_raw + (float(n_roi) / (2.0 * float(n_end))) ** 2 * sum_end
+    area_uncert = 100.0 * math.sqrt(max(var, 1.0)) / max(net_area, 1.0)
 
     energy = float(calibration.energy(center)) if calibration else None
     fwhm_kev = None

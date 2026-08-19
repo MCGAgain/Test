@@ -189,8 +189,7 @@ def build_complete_nuclide_peaks(
                 net_area = max(float(np.sum(roi_raw)) - bg_area, 0.0)
                 if roi_area < net_area:
                     roi_area = net_area
-                bg_total = max(float(np.sum(roi_raw)) - net_area, 0.0)
-                area_unc = 100.0 * math.sqrt(max(net_area + 2.0 * bg_total, 1.0)) / max(net_area, 1.0)
+                area_unc = 0.0
                 rate = roi_area / spectrum.live_time if spectrum.live_time and spectrum.live_time > 0 else None
 
                 all_nuclide_peaks.append(Peak(
